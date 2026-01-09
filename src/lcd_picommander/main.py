@@ -105,8 +105,8 @@ class MenuController:
         for page_raw in pages_raw:
             page = []
             for item in page_raw:
-                label = item.get('label', '?')
-                stat = item.get('stat', '')
+                label = item.get('label', 'N/A')
+                stat = item.get('stat', 'stat:get_hostname')  # Default to hostname if stat missing
                 page.append((label, stat))
             pages.append(page)
         
@@ -328,6 +328,11 @@ class MenuController:
             
             # Get stats for current page
             try:
+                # Validate page index
+                if target_page >= len(pages):
+                    logger.error(f"Invalid page index: {target_page} (max: {len(pages)-1})")
+                    raise IndexError(f"Page index {target_page} out of range")
+                
                 page = pages[self.current_dashboard_page]
                 lines = []
                 
@@ -336,6 +341,7 @@ class MenuController:
                         stat_value = self._execute_stat_wildcard(stat)
                     else:
                         # Fallback to empty if not a stat wildcard
+                        logger.warning(f"Dashboard stat '{stat}' is not a valid stat wildcard")
                         stat_value = ""
                     
                     line = f"{label}:{stat_value}"
@@ -346,8 +352,15 @@ class MenuController:
                     for i, line in enumerate(lines[:self.rows]):
                         self.lcd.cursor_pos = (i, 0)
                         self.lcd.write_string(line[:self.cols])
-            except (AttributeError, TypeError, ValueError, IndexError) as e:
-                logger.error(f"Dashboard cycle error: {e}")
+            except IndexError as e:
+                # Configuration error - page index out of range
+                logger.error(f"Dashboard configuration error: {e}")
+                with self.lcd_lock:
+                    self.lcd.clear()
+                    self.lcd.write_string("Config Error")
+            except (AttributeError, TypeError, ValueError) as e:
+                # Runtime execution error
+                logger.error(f"Dashboard runtime error: {e}")
                 with self.lcd_lock:
                     self.lcd.clear()
                     self.lcd.write_string("Dashboard Error")

@@ -269,7 +269,7 @@ class TestDashboardPageFormats:
     """Test various dashboard page formats."""
     
     def test_dashboard_with_missing_label(self, base_config, mock_hardware):
-        """Test that missing labels default to '?'."""
+        """Test that missing labels default to 'N/A'."""
         from lcd_picommander.main import MenuController
         
         base_config['dashboard'] = {
@@ -283,12 +283,12 @@ class TestDashboardPageFormats:
         config_file = create_config_file(base_config)
         try:
             controller = MenuController(config_file)
-            assert controller.dashboard_config[0][0][0] == "?"
+            assert controller.dashboard_config[0][0][0] == "N/A"
         finally:
             os.unlink(config_file)
     
     def test_dashboard_with_missing_stat(self, base_config, mock_hardware):
-        """Test that missing stats default to empty string."""
+        """Test that missing stats default to hostname stat."""
         from lcd_picommander.main import MenuController
         
         base_config['dashboard'] = {
@@ -302,6 +302,6 @@ class TestDashboardPageFormats:
         config_file = create_config_file(base_config)
         try:
             controller = MenuController(config_file)
-            assert controller.dashboard_config[0][0][1] == ""
+            assert controller.dashboard_config[0][0][1] == "stat:get_hostname"
         finally:
             os.unlink(config_file)
