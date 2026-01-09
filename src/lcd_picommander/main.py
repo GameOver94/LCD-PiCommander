@@ -103,12 +103,25 @@ class MenuController:
         # Parse configured pages
         pages = []
         for page_raw in pages_raw:
+            # Skip empty pages
+            if not page_raw:
+                logger.warning("Skipping empty dashboard page in configuration")
+                continue
+                
             page = []
             for item in page_raw:
                 label = item.get('label', 'N/A')
                 stat = item.get('stat', 'stat:get_hostname')  # Default to hostname if stat missing
                 page.append((label, stat))
             pages.append(page)
+        
+        # If all pages were empty, fall back to default
+        if not pages:
+            logger.warning("All dashboard pages were empty, using default")
+            return [
+                [("IP", "stat:get_ip"), ("H", "stat:get_hostname")],
+                [("Temp", "stat:get_cpu_temp"), ("Net", "stat:check_internet")]
+            ]
         
         return pages
 

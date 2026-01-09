@@ -167,6 +167,27 @@ class TestDashboardConfigLoading:
             assert len(controller.dashboard_config) == 2
         finally:
             os.unlink(config_file)
+    
+    def test_dashboard_with_empty_pages_uses_default(self, base_config, mock_hardware):
+        """Test that dashboard with only empty pages falls back to default."""
+        from lcd_picommander.main import MenuController
+        
+        base_config['dashboard'] = {
+            'pages': [[], [], []]  # All empty pages
+        }
+        
+        config_file = create_config_file(base_config)
+        try:
+            controller = MenuController(config_file)
+            
+            # Should fall back to default dashboard
+            assert len(controller.dashboard_config) == 2
+            assert controller.dashboard_config[0] == [
+                ("IP", "stat:get_ip"),
+                ("H", "stat:get_hostname")
+            ]
+        finally:
+            os.unlink(config_file)
 
 
 class TestDashboardCycleWithConfig:
