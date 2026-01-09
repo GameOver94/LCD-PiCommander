@@ -31,4 +31,4 @@ This is a casual pet project designed for a Raspberry Pi. It creates a physical 
 - Logging is preferred over `print` statements.
 
 ### Goal
-Have fun building a cool physical interface for my homelab server! force
+Have fun building a cool physical interface for my homelab server!
