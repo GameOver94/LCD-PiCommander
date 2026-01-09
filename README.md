@@ -30,7 +30,15 @@ Perfect for homelabs, media centers, or IoT gateways where you need quick physic
 ### 1. Enable I2C
 Use `sudo raspi-config` to enable the I2C interface under Interface Options.
 
-### 2. Install via pipx
+### 2. Install Build Dependencies
+Some libraries (like `lgpio`) need to be compiled from source. Install these build tools first:
+
+```bash
+sudo apt update
+sudo apt install swig python3-dev liblgpio-dev
+```
+
+### 3. Install via pipx
 The cleanest way to install on modern Pi OS is using `pipx`:
 
 ```
@@ -65,5 +73,5 @@ The `quick_launch` section configures Button 3 to execute a specific command reg
 
 Run the commander with your config:
 ```
-pi-menu --config my_config.yaml
+pi-commander --config my_config.yaml
 ```

@@ -16,8 +16,8 @@ dependencies = [
 ]
 
 [project.scripts]
-# This allows you to run 'pi-menu' from anywhere after installation
-pi-menu = "lcd_picommander.main:main"
+# This allows you to run 'pi-commander' from anywhere after installation
+pi-commander = "lcd_picommander.main:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
