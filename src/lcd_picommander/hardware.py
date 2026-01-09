@@ -1,4 +1,5 @@
 """Hardware initialization and management for LCD and GPIO."""
+import sys
 import logging
 from gpiozero import Button, RotaryEncoder
 from RPLCD.i2c import CharLCD
@@ -31,7 +32,7 @@ class LCDDisplay:
             self.rows = i2c['rows']
         except Exception as e:
             logger.error(f"LCD Init failed: {e}")
-            raise
+            sys.exit(1)
 
 
 class GPIOInputs:

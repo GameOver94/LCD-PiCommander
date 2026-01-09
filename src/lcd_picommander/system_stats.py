@@ -27,7 +27,7 @@ class SystemStats:
             with open("/sys/class/thermal/thermal_zone0/temp", "r") as f:
                 temp = int(f.read()) / 1000.0
             return f"{temp:.1f}C"
-        except:
+        except Exception:
             return "N/A"
 
     @staticmethod
