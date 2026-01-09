@@ -4,66 +4,18 @@ import time
 import subprocess
 import argparse
 import logging
-import socket
 from pathlib import Path
 from collections import deque
 from threading import Lock
 
-# Hardware Libraries
-from gpiozero import Button, RotaryEncoder
-from RPLCD.i2c import CharLCD
+# Local imports
+from .system_stats import SystemStats
+from .menu import MenuNode
+from .hardware import LCDDisplay, GPIOInputs
 
 # Setup Logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
-
-class SystemStats:
-    """Helper class to gather system information efficiently."""
-    
-    @staticmethod
-    def get_ip():
-        try:
-            s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-            s.settimeout(0)
-            s.connect(('1.1.1.1', 1))
-            ip = s.getsockname()[0]
-            s.close()
-            return ip
-        except Exception:
-            return "No IP"
-
-    @staticmethod
-    def get_hostname():
-        return socket.gethostname()
-
-    @staticmethod
-    def get_cpu_temp():
-        try:
-            with open("/sys/class/thermal/thermal_zone0/temp", "r") as f:
-                temp = int(f.read()) / 1000.0
-            return f"{temp:.1f}C"
-        except:
-            return "N/A"
-
-    @staticmethod
-    def check_internet():
-        try:
-            socket.create_connection(("1.1.1.1", 53), timeout=2)
-            return "Online"
-        except OSError:
-            return "Offline"
-
-class MenuNode:
-    """Represents a single item in the menu tree."""
-    def __init__(self, label, action=None, children=None, wait_for_key=False):
-        self.label = label
-        self.action = action
-        self.children = children if children else []
-        self.wait_for_key = wait_for_key
-
-    @property
-    def is_submenu(self):
-        return bool(self.children)
 
 class MenuController:
     def __init__(self, config_path):
@@ -87,8 +39,13 @@ class MenuController:
         self.quick_launch_config = self.config.get('quick_launch', {})
         
         # Initialize Hardware
-        self._init_lcd()
-        self._init_gpio()
+        self.lcd_display = LCDDisplay(self.hw_conf)
+        self.lcd = self.lcd_display.lcd
+        self.cols = self.lcd_display.cols
+        self.rows = self.lcd_display.rows
+        
+        self.gpio_inputs = GPIOInputs(self.hw_conf)
+        self._setup_gpio_callbacks()
         
         # Load Menu Tree
         self.root_nodes = self._parse_menu(self.config['menu'])
@@ -116,50 +73,15 @@ class MenuController:
             ))
         return nodes
 
-    def _init_lcd(self):
-        i2c = self.hw_conf['i2c']
-        try:
-            self.lcd = CharLCD(
-                i2c_expander='PCF8574',
-                address=i2c['address'],
-                port=i2c['port'],
-                cols=i2c['cols'],
-                rows=i2c['rows'],
-                dotsize=8
-            )
-            self.lcd.clear()
-            self.lcd.write_string("LCD PiCommander")
-            self.cols = i2c['cols']
-            self.rows = i2c['rows']
-        except Exception as e:
-            logger.error(f"LCD Init failed: {e}")
-            sys.exit(1)
-
-    def _init_gpio(self):
-        inputs = self.hw_conf['inputs']
-        pull_up = inputs.get('pull_up', True)
+    def _setup_gpio_callbacks(self):
+        """Setup callbacks for GPIO inputs."""
+        self.gpio_inputs.encoder.when_rotated_clockwise = self._on_scroll_down
+        self.gpio_inputs.encoder.when_rotated_counter_clockwise = self._on_scroll_up
         
-        # Encoder
-        self.encoder = RotaryEncoder(
-            inputs['encoder']['clk'], 
-            inputs['encoder']['dt'], 
-            wrap=False
-        )
-        self.encoder.when_rotated_clockwise = self._on_scroll_down
-        self.encoder.when_rotated_counter_clockwise = self._on_scroll_up
-
-        # Buttons (Debounced)
-        self.btn_enter = Button(inputs['buttons']['enter'], pull_up=pull_up, bounce_time=0.1)
-        self.btn_back = Button(inputs['buttons']['back'], pull_up=pull_up, bounce_time=0.1)
-        self.btn_home = Button(inputs['buttons']['custom'], pull_up=pull_up, bounce_time=0.1)
-        
-        # New Button 3 (Pin 8) mapped to Launch Command
-        self.btn_launch = Button(8, pull_up=pull_up, bounce_time=0.1)
-
-        self.btn_enter.when_pressed = self._on_enter
-        self.btn_back.when_pressed = self._on_back
-        self.btn_home.when_pressed = self._on_home
-        self.btn_launch.when_pressed = self._on_launch
+        self.gpio_inputs.btn_enter.when_pressed = self._on_enter
+        self.gpio_inputs.btn_back.when_pressed = self._on_back
+        self.gpio_inputs.btn_home.when_pressed = self._on_home
+        self.gpio_inputs.btn_launch.when_pressed = self._on_launch
 
     def _wake_up(self):
         self.last_input_time = time.time()
