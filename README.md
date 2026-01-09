@@ -47,7 +47,7 @@ sudo apt update && sudo apt install pipx
 pipx ensurepath
 
 # Install LCD PiCommander
-pipx install githttps://github.com/GameOver94/LCD-PiCommander.git
+pipx install git+https://github.com/GameOver94/LCD-PiCommander.git
 ```
 
 ## ⚙️ Configuration

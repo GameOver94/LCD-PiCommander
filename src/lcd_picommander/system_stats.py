@@ -69,8 +69,12 @@ class SystemStats:
             return "N/A"
     
     @staticmethod
-    def get_memory_usage():
-        """Get memory usage percentage."""
+    def _parse_memory_info():
+        """Parse memory info from /proc/meminfo.
+        
+        Returns:
+            Tuple of (total_kb, available_kb) or (0, 0) on error
+        """
         try:
             with open("/proc/meminfo", "r") as f:
                 lines = f.readlines()
@@ -88,8 +92,15 @@ class SystemStats:
                         if len(mem_info) == len(needed_keys):
                             break
             
-            total = mem_info.get('MemTotal', 0)
-            available = mem_info.get('MemAvailable', 0)
+            return mem_info.get('MemTotal', 0), mem_info.get('MemAvailable', 0)
+        except Exception:
+            return 0, 0
+    
+    @staticmethod
+    def get_memory_usage():
+        """Get memory usage percentage."""
+        try:
+            total, available = SystemStats._parse_memory_info()
             
             if total > 0:
                 used_percent = ((total - available) / total) * 100
@@ -102,24 +113,10 @@ class SystemStats:
     def get_memory_info():
         """Get memory usage in MB format (used/total)."""
         try:
-            with open("/proc/meminfo", "r") as f:
-                lines = f.readlines()
+            total_kb, available_kb = SystemStats._parse_memory_info()
             
-            mem_info = {}
-            needed_keys = {'MemTotal', 'MemAvailable'}
-            for line in lines:
-                parts = line.split()
-                if len(parts) >= 2:
-                    key = parts[0].rstrip(':')
-                    if key in needed_keys:
-                        value = int(parts[1])
-                        mem_info[key] = value
-                        # Stop once we have both values
-                        if len(mem_info) == len(needed_keys):
-                            break
-            
-            total = mem_info.get('MemTotal', 0) / 1024  # Convert to MB
-            available = mem_info.get('MemAvailable', 0) / 1024
+            total = total_kb / 1024  # Convert to MB
+            available = available_kb / 1024
             used = total - available
             
             return f"{used:.0f}/{total:.0f}MB"

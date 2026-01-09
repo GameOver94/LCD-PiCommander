@@ -188,7 +188,11 @@ class MenuController:
         """
         try:
             # Extract method name from 'stat:method_name'
-            method_name = action.split(':', 1)[1]
+            parts = action.split(':', 1)
+            if len(parts) != 2 or not parts[1]:
+                return "Invalid format"
+            
+            method_name = parts[1]
             
             # Check if method exists in SystemStats
             if hasattr(SystemStats, method_name):
