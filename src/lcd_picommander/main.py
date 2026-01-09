@@ -4,6 +4,7 @@ import time
 import subprocess
 import argparse
 import logging
+import re
 from pathlib import Path
 from collections import deque
 from threading import Lock
@@ -173,18 +174,57 @@ class MenuController:
         )
         self._execute_action(quick_launch_node)
 
+    def _is_wildcard_action(self, action):
+        """Check if action contains a wildcard pattern like ${stats.method_name}."""
+        if not action:
+            return False
+        return bool(re.search(r'\$\{stats\.\w+\}', action))
+
+    def _execute_wildcard(self, action):
+        """Execute a wildcard action by calling the appropriate SystemStats method."""
+        # Find all wildcard patterns in the action
+        pattern = r'\$\{stats\.(\w+)\}'
+        matches = re.findall(pattern, action)
+        
+        result = action
+        for method_name in matches:
+            # Check if the method exists in SystemStats
+            if hasattr(SystemStats, method_name):
+                method = getattr(SystemStats, method_name)
+                if callable(method):
+                    try:
+                        # Call the method and get the result
+                        value = method()
+                        # Replace the wildcard with the actual value
+                        result = result.replace(f'${{stats.{method_name}}}', str(value))
+                    except Exception as e:
+                        logger.error(f"Error calling SystemStats.{method_name}: {e}")
+                        result = result.replace(f'${{stats.{method_name}}}', "Error")
+                else:
+                    result = result.replace(f'${{stats.{method_name}}}', "Not callable")
+            else:
+                result = result.replace(f'${{stats.{method_name}}}', "Unknown method")
+        
+        return result
+
     def _execute_action(self, node):
         with self.lcd_lock:
             self.lcd.clear()
             self.lcd.write_string("Executing...")
         
         try:
-            result = subprocess.run(
-                node.action, shell=True, capture_output=True, text=True, timeout=30
-            )
-            output = result.stdout.strip() if result.stdout else result.stderr.strip()
-            if not output:
-                output = "Done." if result.returncode == 0 else "Error"
+            # Check if this is a wildcard action
+            if self._is_wildcard_action(node.action):
+                # Execute wildcard and get the result directly
+                output = self._execute_wildcard(node.action)
+            else:
+                # Execute as a shell command
+                result = subprocess.run(
+                    node.action, shell=True, capture_output=True, text=True, timeout=30
+                )
+                output = result.stdout.strip() if result.stdout else result.stderr.strip()
+                if not output:
+                    output = "Done." if result.returncode == 0 else "Error"
         except Exception as e:
             output = f"Err: {str(e)[:15]}"
 

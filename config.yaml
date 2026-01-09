@@ -30,17 +30,61 @@ quick_launch:
   wait_for_key: true  # Whether to wait for a key press after showing output
 
 # Menu Structure
+# You can use wildcards like ${stats.method_name} to call SystemStats methods
+# Available methods: get_ip, get_hostname, get_cpu_temp, check_internet,
+#                    get_cpu_usage, get_memory, get_memory_percent,
+#                    get_disk_usage, get_disk_percent, get_uptime,
+#                    get_kernel, get_os
 menu:
   - label: "System Info"
     items:
-      - label: "IP Addr"
-        action: "hostname -I | cut -d' ' -f1"
+      - label: "IP Address"
+        action: "${stats.get_ip}"
+        wait_for_key: true
+      - label: "Hostname"
+        action: "${stats.get_hostname}"
         wait_for_key: true
       - label: "CPU Temp"
-        action: "vcgencmd measure_temp"
+        action: "${stats.get_cpu_temp}"
+        wait_for_key: true
+      - label: "CPU Usage"
+        action: "${stats.get_cpu_usage}"
+        wait_for_key: true
+      - label: "Memory"
+        action: "${stats.get_memory}"
+        wait_for_key: true
+      - label: "Memory %"
+        action: "${stats.get_memory_percent}"
+        wait_for_key: true
+      - label: "Disk Usage"
+        action: "${stats.get_disk_usage}"
         wait_for_key: true
       - label: "Disk %"
-        action: "df -h / | tail -1 | awk '{print $5}'"
+        action: "${stats.get_disk_percent}"
+        wait_for_key: true
+      - label: "Uptime"
+        action: "${stats.get_uptime}"
+        wait_for_key: true
+      - label: "OS"
+        action: "${stats.get_os}"
+        wait_for_key: true
+      - label: "Kernel"
+        action: "${stats.get_kernel}"
+        wait_for_key: true
+      - label: "Internet"
+        action: "${stats.check_internet}"
+        wait_for_key: true
+
+  - label: "Advanced Stats"
+    items:
+      - label: "Full CPU Info"
+        action: "cat /proc/cpuinfo | grep 'model name' | head -1"
+        wait_for_key: true
+      - label: "Load Average"
+        action: "uptime | awk -F'load average:' '{print $2}'"
+        wait_for_key: true
+      - label: "Top Processes"
+        action: "ps aux --sort=-%mem | head -6 | tail -5 | awk '{print $11}'"
         wait_for_key: true
 
   - label: "Docker"

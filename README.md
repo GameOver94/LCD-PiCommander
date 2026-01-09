@@ -5,7 +5,8 @@ Perfect for homelabs, media centers, or IoT gateways where you need quick physic
 
 ## ✨ Features
 + 📂 Dynamic Menu: Define your menu structure in a simple config.yaml file.
-+ 🐚 Shell Integration: Link menu items to any bash command or script (Restart Docker, Shutdown, etc.).
++ ⚡ Wildcard System Stats: Use `${stats.method_name}` syntax for easy access to common system statistics (CPU, memory, disk, uptime, etc.).
++ 🐚 Shell Integration: Link menu items to any bash command or script for advanced stats and custom actions.
 + 📊 Idle Dashboard: Automatically cycles through system stats (IP, Hostname, CPU Temp, Internet Status) when not in use.
 + 🎡 Intuitive Navigation: Uses a rotary encoder for scrolling and buttons for Enter/Back/Home.
 
@@ -50,28 +51,74 @@ pipx ensurepath
 pipx install githttps://github.com/GameOver94/LCD-PiCommander.git
 ```
 
-## ⚙️ ConfigurationCreate a config.yaml to define your menu. Example:
-```
+## ⚙️ Configuration
+
+Create a `config.yaml` to define your menu. You can use two types of actions:
+
+### 1. Wildcard System Stats (Recommended for Common Stats)
+Use `${stats.method_name}` syntax to call built-in system statistics methods. This is faster and easier to configure than shell commands:
+
+```yaml
 menu:
+  - label: "System Info"
+    items:
+      - label: "IP Address"
+        action: "${stats.get_ip}"
+        wait_for_key: true
+      - label: "CPU Temp"
+        action: "${stats.get_cpu_temp}"
+        wait_for_key: true
+      - label: "Memory"
+        action: "${stats.get_memory}"
+        wait_for_key: true
+      - label: "Disk Usage"
+        action: "${stats.get_disk_percent}"
+        wait_for_key: true
+```
+
+**Available Wildcard Methods:**
+- `${stats.get_ip}` - Primary IP address
+- `${stats.get_hostname}` - Device hostname
+- `${stats.get_cpu_temp}` - CPU temperature (Raspberry Pi)
+- `${stats.get_cpu_usage}` - CPU usage percentage
+- `${stats.get_memory}` - Memory usage (e.g., "512M/2048M")
+- `${stats.get_memory_percent}` - Memory usage percentage
+- `${stats.get_disk_usage}` - Disk usage (e.g., "12.5G/32.0G")
+- `${stats.get_disk_percent}` - Disk usage percentage
+- `${stats.get_uptime}` - System uptime
+- `${stats.get_kernel}` - Kernel version
+- `${stats.get_os}` - OS information
+- `${stats.check_internet}` - Internet connectivity status
+
+### 2. Custom Shell Commands (For Advanced Stats)
+For more advanced or custom statistics, you can still use any bash command or script:
+
+```yaml
+menu:
+  - label: "Advanced Stats"
+    items:
+      - label: "Load Average"
+        action: "uptime | awk -F'load average:' '{print $2}'"
+        wait_for_key: true
+      - label: "Top Process"
+        action: "ps aux --sort=-%cpu | head -2 | tail -1 | awk '{print $11}'"
+        wait_for_key: true
   - label: "Docker"
     items:
       - label: "Restart All"
         action: "docker-compose restart"
-  - label: "System"
-    items:
-      - label: "IP Address"
-        action: "hostname -I"
-        wait_for_key: true
+```
 
-# Quick Launch Button (Button 3)
+### Quick Launch Button
+The `quick_launch` section configures Button 3 to execute a specific command regardless of which menu item is currently selected. This is useful for frequently accessed commands.
+
+```yaml
 quick_launch:
   command: "docker ps --format '{{.Names}}'"
   wait_for_key: true
 ```
 
-The `quick_launch` section configures Button 3 to execute a specific command regardless of which menu item is currently selected. This is useful for frequently accessed commands.
-
 Run the commander with your config:
-```
+```bash
 pi-commander --config my_config.yaml
 ```
