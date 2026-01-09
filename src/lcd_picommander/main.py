@@ -194,6 +194,10 @@ class MenuController:
             
             method_name = parts[1]
             
+            # Security: Only allow public getter methods (start with 'get_' or 'check_')
+            if not (method_name.startswith('get_') or method_name.startswith('check_')):
+                return f"Not allowed: {method_name}"
+            
             # Check if method exists in SystemStats
             if hasattr(SystemStats, method_name):
                 method = getattr(SystemStats, method_name)

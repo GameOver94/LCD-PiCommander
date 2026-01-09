@@ -1,7 +1,6 @@
 """System statistics helper module."""
 import socket
 import os
-import subprocess
 
 
 class SystemStats:
@@ -46,7 +45,12 @@ class SystemStats:
     
     @staticmethod
     def get_cpu_usage():
-        """Get current CPU usage percentage (based on load average)."""
+        """Get current CPU usage percentage (based on load average).
+        
+        Note: This returns load average as a percentage, not true CPU utilization.
+        Load average indicates system load over time, which can exceed 100% on
+        multi-core systems. For instant CPU % usage, shell commands like top are needed.
+        """
         try:
             # For a quick stat display, we use load average as an approximation
             # True CPU usage would require two samples over time
@@ -191,12 +195,13 @@ class SystemStats:
     def get_kernel():
         """Get kernel version."""
         try:
-            result = subprocess.run(
-                ["uname", "-r"], 
-                capture_output=True, 
-                text=True, 
-                timeout=1
-            )
-            return result.stdout.strip()
+            # Read from /proc/version for better security (no subprocess)
+            with open("/proc/version", "r") as f:
+                version_line = f.read()
+            # Parse the version from the line (format: "Linux version X.X.X-...")
+            parts = version_line.split()
+            if len(parts) >= 3 and parts[0] == "Linux" and parts[1] == "version":
+                return parts[2]
+            return "N/A"
         except Exception:
             return "N/A"
