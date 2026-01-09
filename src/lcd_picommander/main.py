@@ -173,20 +173,54 @@ class MenuController:
         )
         self._execute_action(quick_launch_node)
 
+    def _is_stat_wildcard(self, action):
+        """Check if action is a stat wildcard (e.g., 'stat:get_cpu_temp')."""
+        return isinstance(action, str) and action.startswith('stat:')
+    
+    def _execute_stat_wildcard(self, action):
+        """Execute a SystemStats method based on wildcard syntax.
+        
+        Args:
+            action: String in format 'stat:method_name'
+            
+        Returns:
+            Output string from the stat method
+        """
+        try:
+            # Extract method name from 'stat:method_name'
+            method_name = action.split(':', 1)[1]
+            
+            # Check if method exists in SystemStats
+            if hasattr(SystemStats, method_name):
+                method = getattr(SystemStats, method_name)
+                if callable(method):
+                    return method()
+                else:
+                    return "Not callable"
+            else:
+                return f"Unknown: {method_name}"
+        except Exception as e:
+            return f"Err: {str(e)[:15]}"
+    
     def _execute_action(self, node):
         with self.lcd_lock:
             self.lcd.clear()
             self.lcd.write_string("Executing...")
         
-        try:
-            result = subprocess.run(
-                node.action, shell=True, capture_output=True, text=True, timeout=30
-            )
-            output = result.stdout.strip() if result.stdout else result.stderr.strip()
-            if not output:
-                output = "Done." if result.returncode == 0 else "Error"
-        except Exception as e:
-            output = f"Err: {str(e)[:15]}"
+        # Check if this is a stat wildcard or a shell command
+        if self._is_stat_wildcard(node.action):
+            output = self._execute_stat_wildcard(node.action)
+        else:
+            # Execute as shell command
+            try:
+                result = subprocess.run(
+                    node.action, shell=True, capture_output=True, text=True, timeout=30
+                )
+                output = result.stdout.strip() if result.stdout else result.stderr.strip()
+                if not output:
+                    output = "Done." if result.returncode == 0 else "Error"
+            except Exception as e:
+                output = f"Err: {str(e)[:15]}"
 
         if node.wait_for_key:
             self.in_action_view = True
