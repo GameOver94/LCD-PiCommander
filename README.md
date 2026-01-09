@@ -24,7 +24,7 @@ Perfect for homelabs, media centers, or IoT gateways where you need quick physic
 |Rotary SW  |13       |Enter / Select     |
 |Button 1   |25       |Back / Exit        |
 |Button 2   |11       |Home               |
-|Button 3   |8        |Quck lauch command |
+|Button 3   |8        |Quick Launch       |
 
 ## 🚀 Installation
 ### 1. Enable I2C
@@ -54,7 +54,14 @@ menu:
       - label: "IP Address"
         action: "hostname -I"
         wait_for_key: true
+
+# Quick Launch Button (Button 3)
+quick_launch:
+  command: "docker ps --format '{{.Names}}'"
+  wait_for_key: true
 ```
+
+The `quick_launch` section configures Button 3 to execute a specific command regardless of which menu item is currently selected. This is useful for frequently accessed commands.
 
 Run the commander with your config:
 ```

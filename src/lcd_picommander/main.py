@@ -83,6 +83,9 @@ class MenuController:
         self.idle_timeout = 15.0
         self.is_idle = False
         
+        # Quick Launch Configuration
+        self.quick_launch_config = self.config.get('quick_launch', {})
+        
         # Initialize Hardware
         self._init_lcd()
         self._init_gpio()
@@ -231,11 +234,22 @@ class MenuController:
             self.update_display()
 
     def _on_launch(self):
-        """Specifically handles Button 3 logic: Immediate execute."""
+        """Specifically handles Button 3 logic: Execute configured quick launch command."""
         if self._wake_up(): return
-        selected_node = self.current_menu_list[self.list_offset + self.cursor_pos]
-        if selected_node.action:
-            self._execute_action(selected_node)
+        
+        # Execute the quick launch command from config if available
+        command = self.quick_launch_config.get('command')
+        if not command:
+            logger.warning("No quick_launch command configured")
+            return
+        
+        # Create a temporary MenuNode to execute the configured command
+        quick_launch_node = MenuNode(
+            label="Quick Launch",
+            action=command,
+            wait_for_key=self.quick_launch_config.get('wait_for_key', False)
+        )
+        self._execute_action(quick_launch_node)
 
     def _execute_action(self, node):
         with self.lcd_lock:

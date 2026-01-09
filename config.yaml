@@ -24,6 +24,11 @@ hardware:
     
     pull_up: true       # Standard for buttons connecting to GND
 
+# Quick Launch Configuration (Button 3 on Pin 8)
+quick_launch:
+  command: "docker ps --format '{{.Names}}'"  # Command to execute when Button 3 is pressed
+  wait_for_key: true  # Whether to wait for a key press after showing output
+
 # Menu Structure
 menu:
   - label: "System Info"
