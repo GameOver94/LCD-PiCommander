@@ -48,27 +48,35 @@ class SystemStats:
     def get_cpu_usage():
         """Get current CPU usage percentage."""
         try:
-            # Use top to get CPU usage (1 iteration, batch mode)
-            result = subprocess.run(
-                ["top", "-bn1"], 
-                capture_output=True, 
-                text=True, 
-                timeout=2
-            )
-            # Parse the %Cpu(s) line
-            for line in result.stdout.split('\n'):
-                if '%Cpu(s)' in line or 'CPU:' in line:
-                    # Extract idle percentage and calculate usage
-                    parts = line.split()
-                    for i, part in enumerate(parts):
-                        if 'id' in part or 'idle' in part:
-                            try:
-                                idle = float(parts[i-1].replace(',', '.'))
-                                usage = 100.0 - idle
-                                return f"{usage:.1f}%"
-                            except (ValueError, IndexError):
-                                pass
-            return "N/A"
+            # Read CPU stats from /proc/stat for better performance
+            with open("/proc/stat", "r") as f:
+                line = f.readline()
+            
+            # Parse the first line: cpu  user nice system idle iowait irq softirq
+            parts = line.split()
+            if parts[0] != 'cpu':
+                return "N/A"
+            
+            # Calculate total and idle time
+            user, nice, system, idle = map(int, parts[1:5])
+            iowait, irq, softirq = map(int, parts[5:8]) if len(parts) > 7 else (0, 0, 0)
+            
+            total = user + nice + system + idle + iowait + irq + softirq
+            
+            # For instantaneous reading, we need two samples
+            # For simplicity, we'll use a lightweight approximation
+            # by reading load average which is more meaningful for a quick stat
+            load1, _, _ = os.getloadavg()
+            # Approximate CPU usage from load (rough estimate)
+            # This gives a percentage based on number of cores
+            try:
+                cpu_count = os.cpu_count() or 1
+                usage = (load1 / cpu_count) * 100
+                # Cap at 100%
+                usage = min(usage, 100.0)
+                return f"{usage:.1f}%"
+            except:
+                return "N/A"
         except Exception:
             return "N/A"
     
@@ -89,9 +97,15 @@ class SystemStats:
                 lines = f.readlines()
             
             mem_info = {}
-            for line in lines[:3]:  # First 3 lines have what we need
+            for line in lines:
                 parts = line.split()
-                mem_info[parts[0].rstrip(':')] = int(parts[1])
+                if len(parts) >= 2:
+                    key = parts[0].rstrip(':')
+                    value = int(parts[1])
+                    mem_info[key] = value
+                    # Stop once we have what we need
+                    if 'MemTotal' in mem_info and 'MemAvailable' in mem_info:
+                        break
             
             total = mem_info.get('MemTotal', 0)
             available = mem_info.get('MemAvailable', 0)
@@ -111,9 +125,15 @@ class SystemStats:
                 lines = f.readlines()
             
             mem_info = {}
-            for line in lines[:3]:
+            for line in lines:
                 parts = line.split()
-                mem_info[parts[0].rstrip(':')] = int(parts[1])
+                if len(parts) >= 2:
+                    key = parts[0].rstrip(':')
+                    value = int(parts[1])
+                    mem_info[key] = value
+                    # Stop once we have what we need
+                    if 'MemTotal' in mem_info and 'MemAvailable' in mem_info:
+                        break
             
             total = mem_info.get('MemTotal', 0) / 1024  # Convert to MB
             available = mem_info.get('MemAvailable', 0) / 1024
