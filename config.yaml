@@ -6,6 +6,12 @@ hardware:
     cols: 16            # Updated for 16x2 Display
     rows: 2             # Updated for 16x2 Display
 
+  # Display Behavior
+  display:
+    idle_timeout: 15.0        # Seconds before dashboard starts (when idle)
+    dashboard_cycle_time: 5.0 # Seconds between dashboard page changes
+    backlight_timeout: 300.0  # Seconds before backlight turns off (0 = disabled)
+
   # GPIO Pin Numbers (BCM numbering)
   inputs:
     encoder:
