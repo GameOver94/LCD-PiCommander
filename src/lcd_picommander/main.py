@@ -32,8 +32,14 @@ class MenuController:
         
         # Idle State
         self.last_input_time = time.time()
-        self.idle_timeout = 15.0
+        display_config = self.hw_conf.get('display', {})
+        self.idle_timeout = display_config.get('idle_timeout', 15.0)
+        self.dashboard_cycle_time = display_config.get('dashboard_cycle_time', 5.0)
+        self.backlight_timeout = display_config.get('backlight_timeout', 0.0)
         self.is_idle = False
+        self.backlight_on = True
+        self.last_dashboard_update = 0
+        self.current_dashboard_page = 0
         
         # Quick Launch Configuration
         self.quick_launch_config = self.config.get('quick_launch', {})
@@ -89,6 +95,9 @@ class MenuController:
             self.is_idle = False
             self.update_display()
             return True
+        if not self.backlight_on:
+            self.backlight_on = True
+            self.lcd.backlight_enabled = True
         return False
 
     def _on_scroll_down(self):
@@ -255,26 +264,72 @@ class MenuController:
                 self.lcd.write_string(f"{prefix}{node.label[:self.cols-1]}")
 
     def run_dashboard_cycle(self):
+        """Display dashboard with cycling pages.
+        
+        Stats are only refreshed when:
+        1. The page changes (to reduce flickering)
+        2. There is only one page (refresh with cycle time)
+        """
         pages = [
-            (f"IP:{SystemStats.get_ip()}", f"H:{SystemStats.get_hostname()}"),
-            (f"Temp:{SystemStats.get_cpu_temp()}", f"Net:{SystemStats.check_internet()}")
+            ("IP", "get_ip", "H", "get_hostname"),
+            ("Temp", "get_cpu_temp", "Net", "check_internet")
         ]
-        page_idx = (int(time.time()) // 3) % len(pages)
-        line1, line2 = pages[page_idx]
+        
+        current_time = time.time()
+        
+        # Calculate which page we should be on
+        time_since_idle = current_time - (self.last_input_time + self.idle_timeout)
+        target_page = int(time_since_idle / self.dashboard_cycle_time) % len(pages)
+        
+        # Only update if page changed or if single page and cycle time elapsed
+        should_update = False
+        if len(pages) == 1:
+            # Single page: refresh with cycle time
+            if current_time - self.last_dashboard_update >= self.dashboard_cycle_time:
+                should_update = True
+        else:
+            # Multiple pages: only update when page changes
+            if target_page != self.current_dashboard_page:
+                should_update = True
+        
+        if should_update:
+            self.current_dashboard_page = target_page
+            self.last_dashboard_update = current_time
+            
+            # Get stats for current page
+            label1, stat1, label2, stat2 = pages[self.current_dashboard_page]
+            stat1_value = getattr(SystemStats, stat1)()
+            stat2_value = getattr(SystemStats, stat2)()
+            
+            line1 = f"{label1}:{stat1_value}"
+            line2 = f"{label2}:{stat2_value}"
 
-        with self.lcd_lock:
-            self.lcd.clear()
-            self.lcd.cursor_pos = (0, 0)
-            self.lcd.write_string(line1[:self.cols])
-            self.lcd.cursor_pos = (1, 0)
-            self.lcd.write_string(line2[:self.cols])
+            with self.lcd_lock:
+                self.lcd.clear()
+                self.lcd.cursor_pos = (0, 0)
+                self.lcd.write_string(line1[:self.cols])
+                self.lcd.cursor_pos = (1, 0)
+                self.lcd.write_string(line2[:self.cols])
 
     def run(self):
         try:
             while True:
                 time.sleep(1)
-                if not self.is_idle and (time.time() - self.last_input_time) > self.idle_timeout:
+                current_time = time.time()
+                
+                # Check for idle timeout (start dashboard)
+                if not self.is_idle and (current_time - self.last_input_time) > self.idle_timeout:
                     self.is_idle = True
+                    
+                # Check for backlight timeout (turn off backlight)
+                if (self.backlight_timeout > 0 and 
+                    self.backlight_on and 
+                    (current_time - self.last_input_time) > self.backlight_timeout):
+                    self.backlight_on = False
+                    with self.lcd_lock:
+                        self.lcd.backlight_enabled = False
+                
+                # Run dashboard if idle
                 if self.is_idle:
                     self.run_dashboard_cycle()
         except KeyboardInterrupt:
