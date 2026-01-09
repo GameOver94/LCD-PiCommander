@@ -311,7 +311,7 @@ class MenuController:
                     self.lcd.write_string(line1[:self.cols])
                     self.lcd.cursor_pos = (1, 0)
                     self.lcd.write_string(line2[:self.cols])
-            except (AttributeError, Exception) as e:
+            except (AttributeError, TypeError, ValueError) as e:
                 logger.error(f"Dashboard cycle error: {e}")
                 with self.lcd_lock:
                     self.lcd.clear()
