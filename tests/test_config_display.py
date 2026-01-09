@@ -162,14 +162,16 @@ class TestDashboardCycle:
         controller.last_input_time = time.time() - 20  # Simulate idle state
         
         # First call should update (initial)
-        controller.run_dashboard_cycle()
-        first_update_time = controller.last_dashboard_update
-        assert first_update_time > 0
+        with patch('time.time', return_value=100.0):
+            controller.last_input_time = 80.0
+            controller.run_dashboard_cycle()
+            first_update_time = controller.last_dashboard_update
+            assert first_update_time > 0
         
-        # Immediate second call should NOT update (same page)
-        time.sleep(0.1)
-        controller.run_dashboard_cycle()
-        assert controller.last_dashboard_update == first_update_time
+        # Immediate second call should NOT update (same page, no time passed)
+        with patch('time.time', return_value=100.1):
+            controller.run_dashboard_cycle()
+            assert controller.last_dashboard_update == first_update_time
     
     @patch('lcd_picommander.main.SystemStats')
     def test_dashboard_updates_when_page_changes(self, mock_stats, config_file, mock_hardware):
@@ -187,17 +189,19 @@ class TestDashboardCycle:
         controller.dashboard_cycle_time = 1.0  # Short cycle for testing
         
         # Set initial idle time
-        base_time = time.time() - 20
-        controller.last_input_time = base_time
+        base_idle_time = 80.0  # User went idle at t=80
+        controller.last_input_time = base_idle_time
         
-        # First update (page 0)
-        with patch('time.time', return_value=base_time + controller.idle_timeout + 0.5):
+        # First update (page 0) - shortly after going idle
+        first_page_time = base_idle_time + controller.idle_timeout + 0.5
+        with patch('time.time', return_value=first_page_time):
             controller.run_dashboard_cycle()
             assert controller.current_dashboard_page == 0
             first_update_time = controller.last_dashboard_update
         
-        # After cycle time, should be on page 1
-        with patch('time.time', return_value=base_time + controller.idle_timeout + 1.5):
+        # After cycle time elapsed, should be on page 1
+        second_page_time = base_idle_time + controller.idle_timeout + 1.5
+        with patch('time.time', return_value=second_page_time):
             controller.run_dashboard_cycle()
             assert controller.current_dashboard_page == 1
             assert controller.last_dashboard_update > first_update_time

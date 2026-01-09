@@ -297,19 +297,25 @@ class MenuController:
             self.last_dashboard_update = current_time
             
             # Get stats for current page
-            label1, stat1, label2, stat2 = pages[self.current_dashboard_page]
-            stat1_value = getattr(SystemStats, stat1)()
-            stat2_value = getattr(SystemStats, stat2)()
-            
-            line1 = f"{label1}:{stat1_value}"
-            line2 = f"{label2}:{stat2_value}"
+            try:
+                label1, stat1, label2, stat2 = pages[self.current_dashboard_page]
+                stat1_value = getattr(SystemStats, stat1)()
+                stat2_value = getattr(SystemStats, stat2)()
+                
+                line1 = f"{label1}:{stat1_value}"
+                line2 = f"{label2}:{stat2_value}"
 
-            with self.lcd_lock:
-                self.lcd.clear()
-                self.lcd.cursor_pos = (0, 0)
-                self.lcd.write_string(line1[:self.cols])
-                self.lcd.cursor_pos = (1, 0)
-                self.lcd.write_string(line2[:self.cols])
+                with self.lcd_lock:
+                    self.lcd.clear()
+                    self.lcd.cursor_pos = (0, 0)
+                    self.lcd.write_string(line1[:self.cols])
+                    self.lcd.cursor_pos = (1, 0)
+                    self.lcd.write_string(line2[:self.cols])
+            except (AttributeError, Exception) as e:
+                logger.error(f"Dashboard cycle error: {e}")
+                with self.lcd_lock:
+                    self.lcd.clear()
+                    self.lcd.write_string("Dashboard Error")
 
     def run(self):
         try:
