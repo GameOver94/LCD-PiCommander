@@ -6,7 +6,7 @@ Perfect for homelabs, media centers, or IoT gateways where you need quick physic
 ## ✨ Features
 + 📂 Dynamic Menu: Define your menu structure in a simple config.yaml file.
 + 🐚 Shell Integration: Link menu items to any bash command or script (Restart Docker, Shutdown, etc.).
-+ 📊 Idle Dashboard: Automatically cycles through system stats (IP, Hostname, CPU Temp, Internet Status) when not in use.
++ 📊 Configurable Idle Dashboard: Automatically cycles through customizable system stats when not in use.
 + 🎡 Intuitive Navigation: Uses a rotary encoder for scrolling and buttons for Enter/Back/Home.
 
 ## 🛠️ Hardware Requirements
@@ -106,6 +106,26 @@ menu:
         action: "vcgencmd measure_temp"
         wait_for_key: true
 ```
+
+### Dashboard Configuration
+The `dashboard` section allows you to customize what stats are displayed when the system is idle. You can define multiple pages that will cycle automatically.
+
+```yaml
+dashboard:
+  pages:
+    - - label: "IP"
+        stat: "stat:get_ip"
+      - label: "H"
+        stat: "stat:get_hostname"
+    - - label: "Temp"
+        stat: "stat:get_cpu_temp"
+      - label: "Net"
+        stat: "stat:check_internet"
+```
+
+Each page can display up to 2 stats on a 16x2 display or 4 stats on a 20x4 display. The dashboard will automatically cycle through all configured pages based on the `dashboard_cycle_time` setting (default: 5 seconds).
+
+If no dashboard configuration is provided, the system uses a default dashboard showing IP/Hostname and CPU Temp/Internet status.
 
 ### Quick Launch Configuration
 The `quick_launch` section configures Button 3 to execute a specific command regardless of which menu item is currently selected:

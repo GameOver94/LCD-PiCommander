@@ -44,6 +44,9 @@ class MenuController:
         # Quick Launch Configuration
         self.quick_launch_config = self.config.get('quick_launch', {})
         
+        # Dashboard Configuration
+        self.dashboard_config = self._load_dashboard_config()
+        
         # Initialize Hardware
         self.lcd_display = LCDDisplay(self.hw_conf)
         self.lcd = self.lcd_display.lcd
@@ -78,6 +81,36 @@ class MenuController:
                 wait_for_key=item.get('wait_for_key', False)
             ))
         return nodes
+
+    def _load_dashboard_config(self):
+        """Load dashboard configuration from config file.
+        
+        Returns:
+            List of pages, where each page is a list of (label, stat) tuples.
+            Falls back to default dashboard if not configured.
+        """
+        dashboard_conf = self.config.get('dashboard', {})
+        pages_raw = dashboard_conf.get('pages', [])
+        
+        if not pages_raw:
+            # Default dashboard configuration (backwards compatibility)
+            logger.info("No dashboard config found, using default")
+            return [
+                [("IP", "stat:get_ip"), ("H", "stat:get_hostname")],
+                [("Temp", "stat:get_cpu_temp"), ("Net", "stat:check_internet")]
+            ]
+        
+        # Parse configured pages
+        pages = []
+        for page_raw in pages_raw:
+            page = []
+            for item in page_raw:
+                label = item.get('label', '?')
+                stat = item.get('stat', '')
+                page.append((label, stat))
+            pages.append(page)
+        
+        return pages
 
     def _setup_gpio_callbacks(self):
         """Setup callbacks for GPIO inputs."""
@@ -270,10 +303,7 @@ class MenuController:
         1. The page changes (to reduce flickering)
         2. There is only one page (refresh with cycle time)
         """
-        pages = [
-            ("IP", "get_ip", "H", "get_hostname"),
-            ("Temp", "get_cpu_temp", "Net", "check_internet")
-        ]
+        pages = self.dashboard_config
         
         current_time = time.time()
         
@@ -298,20 +328,25 @@ class MenuController:
             
             # Get stats for current page
             try:
-                label1, stat1, label2, stat2 = pages[self.current_dashboard_page]
-                stat1_value = getattr(SystemStats, stat1)()
-                stat2_value = getattr(SystemStats, stat2)()
+                page = pages[self.current_dashboard_page]
+                lines = []
                 
-                line1 = f"{label1}:{stat1_value}"
-                line2 = f"{label2}:{stat2_value}"
-
+                for label, stat in page:
+                    if self._is_stat_wildcard(stat):
+                        stat_value = self._execute_stat_wildcard(stat)
+                    else:
+                        # Fallback to empty if not a stat wildcard
+                        stat_value = ""
+                    
+                    line = f"{label}:{stat_value}"
+                    lines.append(line)
+                
                 with self.lcd_lock:
                     self.lcd.clear()
-                    self.lcd.cursor_pos = (0, 0)
-                    self.lcd.write_string(line1[:self.cols])
-                    self.lcd.cursor_pos = (1, 0)
-                    self.lcd.write_string(line2[:self.cols])
-            except (AttributeError, TypeError, ValueError) as e:
+                    for i, line in enumerate(lines[:self.rows]):
+                        self.lcd.cursor_pos = (i, 0)
+                        self.lcd.write_string(line[:self.cols])
+            except (AttributeError, TypeError, ValueError, IndexError) as e:
                 logger.error(f"Dashboard cycle error: {e}")
                 with self.lcd_lock:
                     self.lcd.clear()
