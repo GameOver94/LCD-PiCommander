@@ -124,3 +124,29 @@ Run the commander with your config:
 ```bash
 pi-commander --config my_config.yaml
 ```
+
+## 🧪 Testing
+
+The project includes a comprehensive pytest test suite covering all system stats and wildcard functionality.
+
+### Run Tests
+
+```bash
+# Install test dependencies
+pip install -e ".[test]"
+
+# Run all tests
+pytest
+
+# Run with verbose output
+pytest -v
+
+# Run with coverage
+pytest --cov=lcd_picommander --cov-report=html
+```
+
+See `tests/README.md` for more details on the test suite.
+
+## 📝 Development
+
+The test suite is designed to work without hardware dependencies, so you can develop and test on any platform without requiring a Raspberry Pi or hardware components.
