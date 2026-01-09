@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "lcd-picommander"
+version = "0.1.0"
+description = "A configurable LCD Menu tool for Raspberry Pi"
+requires-python = ">=3.9"
+dependencies = [
+    "gpiozero",
+    "RPLCD",
+    "smbus2",
+    "PyYAML",
+    "lgpio"
+]
+
+[project.scripts]
+# This allows you to run 'pi-menu' from anywhere after installation
+pi-menu = "lcd_picommander.main:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
