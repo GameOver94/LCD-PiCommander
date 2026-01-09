@@ -47,31 +47,106 @@ sudo apt update && sudo apt install pipx
 pipx ensurepath
 
 # Install LCD PiCommander
-pipx install githttps://github.com/GameOver94/LCD-PiCommander.git
+pipx install git+https://github.com/GameOver94/LCD-PiCommander.git
 ```
 
-## ⚙️ ConfigurationCreate a config.yaml to define your menu. Example:
+## ⚙️ Configuration
+
+Create a config.yaml to define your menu. The menu system supports two types of actions:
+
+### 1. System Stats Wildcards (Recommended for Common Stats)
+Use the `stat:method_name` syntax to call built-in SystemStats methods:
+
+```yaml
+menu:
+  - label: "System Info"
+    items:
+      - label: "IP Address"
+        action: "stat:get_ip"
+        wait_for_key: true
+      - label: "CPU Temp"
+        action: "stat:get_cpu_temp"
+        wait_for_key: true
+      - label: "Memory Usage"
+        action: "stat:get_memory_usage"
+        wait_for_key: true
+      - label: "Disk Usage"
+        action: "stat:get_disk_usage"
+        wait_for_key: true
 ```
+
+#### Available System Stats Methods:
+- `stat:get_ip` - Local IP address
+- `stat:get_hostname` - System hostname
+- `stat:get_cpu_temp` - CPU temperature
+- `stat:get_cpu_usage` - CPU usage % (based on load average)
+- `stat:get_cpu_load` - CPU load average (1 min)
+- `stat:get_memory_usage` - Memory usage %
+- `stat:get_memory_info` - Memory usage in MB (used/total)
+- `stat:get_disk_usage` - Root filesystem usage %
+- `stat:get_disk_info` - Disk usage in GB (used/total)
+- `stat:get_uptime` - System uptime
+- `stat:get_os_info` - OS name and version
+- `stat:get_kernel` - Kernel version
+- `stat:check_internet` - Internet connectivity status
+
+### 2. Shell Commands (For Advanced/Custom Stats)
+For advanced stats or custom commands, use regular shell commands:
+
+```yaml
 menu:
   - label: "Docker"
     items:
-      - label: "Restart All"
-        action: "docker-compose restart"
-  - label: "System"
-    items:
-      - label: "IP Address"
-        action: "hostname -I"
+      - label: "List Containers"
+        action: "docker ps --format '{{.Names}}'"
         wait_for_key: true
+  - label: "Advanced"
+    items:
+      - label: "GPU Temp"
+        action: "vcgencmd measure_temp"
+        wait_for_key: true
+```
 
-# Quick Launch Button (Button 3)
+### Quick Launch Configuration
+The `quick_launch` section configures Button 3 to execute a specific command regardless of which menu item is currently selected:
+
+```yaml
 quick_launch:
   command: "docker ps --format '{{.Names}}'"
   wait_for_key: true
 ```
 
-The `quick_launch` section configures Button 3 to execute a specific command regardless of which menu item is currently selected. This is useful for frequently accessed commands.
+### Full Example
+
+See `config.yaml` in the repository for a complete example showing both stat wildcards and shell commands.
 
 Run the commander with your config:
-```
+```bash
 pi-commander --config my_config.yaml
 ```
+
+## 🧪 Testing
+
+The project includes a comprehensive pytest test suite covering all system stats and wildcard functionality.
+
+### Run Tests
+
+```bash
+# Install test dependencies
+pip install -e ".[test]"
+
+# Run all tests
+pytest
+
+# Run with verbose output
+pytest -v
+
+# Run with coverage
+pytest --cov=lcd_picommander --cov-report=html
+```
+
+See `tests/README.md` for more details on the test suite.
+
+## 📝 Development
+
+The test suite is designed to work without hardware dependencies, so you can develop and test on any platform without requiring a Raspberry Pi or hardware components.

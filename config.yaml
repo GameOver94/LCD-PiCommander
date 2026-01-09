@@ -30,17 +30,49 @@ quick_launch:
   wait_for_key: true  # Whether to wait for a key press after showing output
 
 # Menu Structure
+# Use 'stat:method_name' to call SystemStats methods (recommended for common stats)
+# Or use shell commands for advanced/custom stats
 menu:
   - label: "System Info"
     items:
       - label: "IP Addr"
-        action: "hostname -I | cut -d' ' -f1"
+        action: "stat:get_ip"
+        wait_for_key: true
+      - label: "Hostname"
+        action: "stat:get_hostname"
         wait_for_key: true
       - label: "CPU Temp"
-        action: "vcgencmd measure_temp"
+        action: "stat:get_cpu_temp"
+        wait_for_key: true
+      - label: "CPU Usage"
+        action: "stat:get_cpu_usage"
+        wait_for_key: true
+      - label: "CPU Load"
+        action: "stat:get_cpu_load"
+        wait_for_key: true
+      - label: "Memory %"
+        action: "stat:get_memory_usage"
+        wait_for_key: true
+      - label: "Memory Info"
+        action: "stat:get_memory_info"
         wait_for_key: true
       - label: "Disk %"
-        action: "df -h / | tail -1 | awk '{print $5}'"
+        action: "stat:get_disk_usage"
+        wait_for_key: true
+      - label: "Disk Info"
+        action: "stat:get_disk_info"
+        wait_for_key: true
+      - label: "Uptime"
+        action: "stat:get_uptime"
+        wait_for_key: true
+      - label: "OS Info"
+        action: "stat:get_os_info"
+        wait_for_key: true
+      - label: "Kernel"
+        action: "stat:get_kernel"
+        wait_for_key: true
+      - label: "Internet"
+        action: "stat:check_internet"
         wait_for_key: true
 
   - label: "Docker"
@@ -50,6 +82,18 @@ menu:
         wait_for_key: true
       - label: "Restart Stack"
         action: "cd /home/pi/docker && docker compose restart"
+
+  - label: "Advanced Stats"
+    items:
+      - label: "GPU Temp"
+        action: "vcgencmd measure_temp"
+        wait_for_key: true
+      - label: "GPU Memory"
+        action: "vcgencmd get_mem gpu"
+        wait_for_key: true
+      - label: "Throttled?"
+        action: "vcgencmd get_throttled"
+        wait_for_key: true
 
   - label: "Power"
     items:

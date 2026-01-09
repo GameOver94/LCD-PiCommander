@@ -1,5 +1,6 @@
 """System statistics helper module."""
 import socket
+import os
 
 
 class SystemStats:
@@ -7,6 +8,7 @@ class SystemStats:
     
     @staticmethod
     def get_ip():
+        """Get the local IP address."""
         try:
             s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
             s.settimeout(0)
@@ -19,10 +21,12 @@ class SystemStats:
 
     @staticmethod
     def get_hostname():
+        """Get the system hostname."""
         return socket.gethostname()
 
     @staticmethod
     def get_cpu_temp():
+        """Get CPU temperature in Celsius."""
         try:
             with open("/sys/class/thermal/thermal_zone0/temp", "r") as f:
                 temp = int(f.read()) / 1000.0
@@ -32,8 +36,172 @@ class SystemStats:
 
     @staticmethod
     def check_internet():
+        """Check internet connectivity."""
         try:
             socket.create_connection(("1.1.1.1", 53), timeout=2)
             return "Online"
         except OSError:
             return "Offline"
+    
+    @staticmethod
+    def get_cpu_usage():
+        """Get current CPU usage percentage (based on load average).
+        
+        Note: This returns load average as a percentage, not true CPU utilization.
+        Load average indicates system load over time, which can exceed 100% on
+        multi-core systems. For instant CPU % usage, shell commands like top are needed.
+        """
+        try:
+            # For a quick stat display, we use load average as an approximation
+            # True CPU usage would require two samples over time
+            load1, _, _ = os.getloadavg()
+            cpu_count = os.cpu_count() or 1
+            usage = (load1 / cpu_count) * 100
+            # Cap at 100%
+            usage = min(usage, 100.0)
+            return f"{usage:.1f}%"
+        except Exception:
+            return "N/A"
+    
+    @staticmethod
+    def get_cpu_load():
+        """Get CPU load average (1 min)."""
+        try:
+            load1, _, _ = os.getloadavg()
+            return f"{load1:.2f}"
+        except Exception:
+            return "N/A"
+    
+    @staticmethod
+    def _parse_memory_info():
+        """Parse memory info from /proc/meminfo.
+        
+        Returns:
+            Tuple of (total_kb, available_kb) or (0, 0) on error
+        """
+        try:
+            with open("/proc/meminfo", "r") as f:
+                lines = f.readlines()
+            
+            mem_info = {}
+            needed_keys = {'MemTotal', 'MemAvailable'}
+            for line in lines:
+                parts = line.split()
+                if len(parts) >= 2:
+                    key = parts[0].rstrip(':')
+                    if key in needed_keys:
+                        value = int(parts[1])
+                        mem_info[key] = value
+                        # Stop once we have both values
+                        if len(mem_info) == len(needed_keys):
+                            break
+            
+            return mem_info.get('MemTotal', 0), mem_info.get('MemAvailable', 0)
+        except Exception:
+            return 0, 0
+    
+    @staticmethod
+    def get_memory_usage():
+        """Get memory usage percentage."""
+        try:
+            total, available = SystemStats._parse_memory_info()
+            
+            if total > 0:
+                used_percent = ((total - available) / total) * 100
+                return f"{used_percent:.1f}%"
+            return "N/A"
+        except Exception:
+            return "N/A"
+    
+    @staticmethod
+    def get_memory_info():
+        """Get memory usage in MB format (used/total)."""
+        try:
+            total_kb, available_kb = SystemStats._parse_memory_info()
+            
+            total = total_kb / 1024  # Convert to MB
+            available = available_kb / 1024
+            used = total - available
+            
+            return f"{used:.0f}/{total:.0f}MB"
+        except Exception:
+            return "N/A"
+    
+    @staticmethod
+    def get_disk_usage():
+        """Get root filesystem usage percentage."""
+        try:
+            stat = os.statvfs('/')
+            total = stat.f_blocks * stat.f_frsize
+            free = stat.f_bfree * stat.f_frsize
+            used = total - free
+            percent = (used / total) * 100
+            return f"{percent:.1f}%"
+        except Exception:
+            return "N/A"
+    
+    @staticmethod
+    def get_disk_info():
+        """Get root filesystem usage in GB format (used/total)."""
+        try:
+            stat = os.statvfs('/')
+            total = (stat.f_blocks * stat.f_frsize) / (1024**3)  # Convert to GB
+            free = (stat.f_bfree * stat.f_frsize) / (1024**3)
+            used = total - free
+            return f"{used:.1f}/{total:.1f}GB"
+        except Exception:
+            return "N/A"
+    
+    @staticmethod
+    def get_uptime():
+        """Get system uptime."""
+        try:
+            with open("/proc/uptime", "r") as f:
+                uptime_seconds = float(f.read().split()[0])
+            
+            days = int(uptime_seconds // 86400)
+            hours = int((uptime_seconds % 86400) // 3600)
+            minutes = int((uptime_seconds % 3600) // 60)
+            
+            if days > 0:
+                return f"{days}d {hours}h {minutes}m"
+            elif hours > 0:
+                return f"{hours}h {minutes}m"
+            else:
+                return f"{minutes}m"
+        except Exception:
+            return "N/A"
+    
+    @staticmethod
+    def get_os_info():
+        """Get OS name and version."""
+        try:
+            with open("/etc/os-release", "r") as f:
+                lines = f.readlines()
+            
+            for line in lines:
+                if line.startswith("PRETTY_NAME="):
+                    # Extract the value, remove quotes
+                    os_name = line.split('=', 1)[1].strip().strip('"')
+                    # Shorten common long names
+                    os_name = os_name.replace("Raspbian GNU/Linux", "Raspbian")
+                    os_name = os_name.replace("Raspberry Pi OS", "Pi OS")
+                    return os_name
+            return "Linux"
+        except Exception:
+            return "Linux"
+    
+    @staticmethod
+    def get_kernel():
+        """Get kernel version."""
+        try:
+            # Read from /proc/version for better security (no subprocess)
+            with open("/proc/version", "r") as f:
+                version_line = f.read()
+            # Parse the version from the line (format: "Linux version X.X.X-...")
+            parts = version_line.split()
+            if len(parts) >= 3 and parts[0] == "Linux" and parts[1] == "version":
+                return parts[2]
+            return "N/A"
+        except Exception:
+            return "N/A"
