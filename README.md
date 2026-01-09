@@ -79,7 +79,7 @@ menu:
 - `stat:get_ip` - Local IP address
 - `stat:get_hostname` - System hostname
 - `stat:get_cpu_temp` - CPU temperature
-- `stat:get_cpu_usage` - Current CPU usage %
+- `stat:get_cpu_usage` - CPU usage % (based on load average)
 - `stat:get_cpu_load` - CPU load average (1 min)
 - `stat:get_memory_usage` - Memory usage %
 - `stat:get_memory_info` - Memory usage in MB (used/total)
