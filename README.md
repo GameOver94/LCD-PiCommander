@@ -39,7 +39,7 @@ sudo apt update && sudo apt install pipx
 pipx ensurepath
 
 # Install LCD PiCommander
-pipx install git+[https://github.com/GameOver94/LCD-PiCommander.git](https://github.com/GameOver94/LCD-PiCommander.git)
+pipx install githttps://github.com/GameOver94/LCD-PiCommander.git
 ```
 
 ## ⚙️ ConfigurationCreate a config.yaml to define your menu. Example:
