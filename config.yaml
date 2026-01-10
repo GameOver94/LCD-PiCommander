@@ -6,6 +6,24 @@ hardware:
     cols: 16            # Updated for 16x2 Display
     rows: 2             # Updated for 16x2 Display
 
+  # GPIO Pin Numbers (BCM numbering)
+  inputs:
+    encoder:
+      clk: 12           # ROT_A
+      dt: 6             # ROT_B
+    buttons:
+      # Mapping Logic:
+      # Enter  -> ROT_SW (Encoder Push Button)
+      # Back   -> BTN_SW1
+      # Custom -> BTN_SW2
+      # Unused -> BTN_SW3 (Pin 8) - Swap with 'custom' below if preferred
+      
+      enter: 13         # ROT_SW
+      back: 25          # BTN_SW1
+      custom: 11        # BTN_SW2
+    
+    pull_up: true       # Standard for buttons connecting to GND
+
   # Display Behavior
   display:
     idle_timeout: 15.0        # Seconds before dashboard starts (when idle)
@@ -25,24 +43,6 @@ dashboard:
         stat: "stat:get_cpu_temp"
       - label: "Net"
         stat: "stat:check_internet"
-
-  # GPIO Pin Numbers (BCM numbering)
-  inputs:
-    encoder:
-      clk: 12           # ROT_A
-      dt: 6             # ROT_B
-    buttons:
-      # Mapping Logic:
-      # Enter  -> ROT_SW (Encoder Push Button)
-      # Back   -> BTN_SW1
-      # Custom -> BTN_SW2
-      # Unused -> BTN_SW3 (Pin 8) - Swap with 'custom' below if preferred
-      
-      enter: 13         # ROT_SW
-      back: 25          # BTN_SW1
-      custom: 11        # BTN_SW2
-    
-    pull_up: true       # Standard for buttons connecting to GND
 
 # Quick Launch Configuration (Button 3 on Pin 8)
 quick_launch:
