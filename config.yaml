@@ -118,7 +118,7 @@ menu:
   - label: "Power"
     items:
       - label: "Restart App"
-        action: "systemctl restart pi-menu"
+        action: "systemctl restart lcd-picommander"
       - label: "Reboot"
         action: "sudo reboot"
       - label: "Shutdown"

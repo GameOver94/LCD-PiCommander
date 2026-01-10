@@ -145,6 +145,47 @@ Run the commander with your config:
 pi-commander --config my_config.yaml
 ```
 
+## 🔄 Run as a Service (Auto-Start)
+ To have LCD PiCommander start automatically on boot, set it up as a systemd service.
+
+ 1. **Create the service file:**
+   ```bash
+   sudo nano /etc/systemd/system/lcd-picommander.service
+    ```
+
+ 2. **Paste the following configuration** (Adjust usage of `/home/pi/` if your user is different):
+    ```ini
+    [Unit]
+    Description=LCD PiCommander Service
+    After=network.target
+
+    [Service]
+    Type=simple
+    # Replace 'pi' with your username
+    User=pi
+    WorkingDirectory=/home/pi
+    # Ensure this path matches where pipx installed the binary
+    ExecStart=/home/pi/.local/bin/pi-commander --config /home/pi/config.yaml
+    Restart=always
+    RestartSec=5
+    Environment=PYTHONUNBUFFERED=1
+
+    [Install]
+    WantedBy=multi-user.target
+    ```
+
+ 3. **Enable and Start the Service:**
+   ```bash
+   sudo systemctl daemon-reload
+   sudo systemctl enable lcd-picommander.service
+   sudo systemctl start lcd-picommander.service
+    ```
+
+ 4. **Check Status:**
+   ```bash
+   systemctl status lcd-picommander.service
+    ```
+
 ## 🧪 Testing
 
 The project includes a comprehensive pytest test suite covering all system stats and wildcard functionality.
