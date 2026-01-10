@@ -35,7 +35,7 @@ hardware:
 # Use 'stat:method_name' syntax to call SystemStats methods
 dashboard:
   pages:
-    - - label: "IP:   "
+    - - label: "IP: "
         stat: "stat:get_ip"
       - label: "Host: "
         stat: "stat:get_hostname"

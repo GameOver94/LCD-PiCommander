@@ -96,7 +96,7 @@ class MenuController:
             # Default dashboard configuration (backwards compatibility)
             logger.info("No dashboard config found, using default")
             return [
-                [("IP:   ", "stat:get_ip"), ("Host: ", "stat:get_hostname")],
+                [("IP: ", "stat:get_ip"), ("Host: ", "stat:get_hostname")],
                 [("Temp: ", "stat:get_cpu_temp"), ("Net: ", "stat:check_internet")]
             ]
         
