@@ -6,12 +6,6 @@ hardware:
     cols: 16            # Updated for 16x2 Display
     rows: 2             # Updated for 16x2 Display
 
-  # Display Behavior
-  display:
-    idle_timeout: 15.0        # Seconds before dashboard starts (when idle)
-    dashboard_cycle_time: 5.0 # Seconds between dashboard page changes
-    backlight_timeout: 300.0  # Seconds before backlight turns off (0 = disabled)
-
   # GPIO Pin Numbers (BCM numbering)
   inputs:
     encoder:
@@ -29,6 +23,26 @@ hardware:
       custom: 11        # BTN_SW2
     
     pull_up: true       # Standard for buttons connecting to GND
+
+  # Display Behavior
+  display:
+    idle_timeout: 15.0        # Seconds before dashboard starts (when idle)
+    dashboard_cycle_time: 5.0 # Seconds between dashboard page changes
+    backlight_timeout: 300.0  # Seconds before backlight turns off (0 = disabled)
+
+# Dashboard Configuration (shown when idle)
+# Each page can display up to 2 stats (for 16x2 display) or 4 stats (for 20x4 display)
+# Use 'stat:method_name' syntax to call SystemStats methods
+dashboard:
+  pages:
+    - - label: "IP:   "
+        stat: "stat:get_ip"
+      - label: "Host: "
+        stat: "stat:get_hostname"
+    - - label: "Temp: "
+        stat: "stat:get_cpu_temp"
+      - label: "Net:  "
+        stat: "stat:check_internet"
 
 # Quick Launch Configuration (Button 3 on Pin 8)
 quick_launch:
@@ -104,7 +118,7 @@ menu:
   - label: "Power"
     items:
       - label: "Restart App"
-        action: "systemctl restart pi-menu"
+        action: "systemctl restart lcd-picommander"
       - label: "Reboot"
         action: "sudo reboot"
       - label: "Shutdown"

@@ -1,4 +1,4 @@
-# Copilot Instructions for LCD PiCommander
+# Copilot Instructions for LCD-PiCommander
 
 This is a casual pet project designed for a Raspberry Pi. It creates a physical menu system on a character LCD (16x2 or 20x4).
 
