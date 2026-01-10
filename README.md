@@ -113,13 +113,13 @@ The `dashboard` section allows you to customize what stats are displayed when th
 ```yaml
 dashboard:
   pages:
-    - - label: "IP"
+    - - label: "IP:   "
         stat: "stat:get_ip"
-      - label: "H"
+      - label: "Host: "
         stat: "stat:get_hostname"
-    - - label: "Temp"
+    - - label: "Temp: "
         stat: "stat:get_cpu_temp"
-      - label: "Net"
+      - label: "Net:  "
         stat: "stat:check_internet"
 ```
 

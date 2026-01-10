@@ -96,8 +96,8 @@ class MenuController:
             # Default dashboard configuration (backwards compatibility)
             logger.info("No dashboard config found, using default")
             return [
-                [("IP", "stat:get_ip"), ("H", "stat:get_hostname")],
-                [("Temp", "stat:get_cpu_temp"), ("Net", "stat:check_internet")]
+                [("IP:   ", "stat:get_ip"), ("Host: ", "stat:get_hostname")],
+                [("Temp: ", "stat:get_cpu_temp"), ("Net: ", "stat:check_internet")]
             ]
         
         # Parse configured pages
@@ -357,7 +357,7 @@ class MenuController:
                         logger.warning(f"Dashboard stat '{stat}' is not a valid stat wildcard")
                         stat_value = ""
                     
-                    line = f"{label}:{stat_value}"
+                    line = f"{label}{stat_value}"
                     lines.append(line)
                 
                 with self.lcd_lock:
